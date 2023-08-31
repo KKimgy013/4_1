@@ -1,0 +1,131 @@
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.time.*;
+
+public class ForProgram {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://localhost:3306/personality";
+        String username = "root";
+        String password = "20206319";
+        Area_bitmap area = new Area_bitmap();
+        delivery_bitmap deli = new delivery_bitmap();
+        type_bitmap type = new type_bitmap();
+
+        // 랜덤한 데이터를 생성하기 위한 배열
+        String[] names = { "오세훈", "변백현", "김종인", "김준면", "이수만", "가나현", "이은별", "최어진", "임희원", "김송교", "이가을", "장원영",
+                "안유진", "이나연", "조범희", "양혜준", "강하연", "이동윤", "김가연", "김주현", "이주현", "신지수", "강민지", "김건", "김규일",
+                "박지현", "박수빈", "박소윤", "이소윤", "이서영", "배정우", "박동윤", "김유미", "김소람", "전예원", "김진성", "우다원", "박원희",
+                "장정민", "조수이", "최아람", "최지현", "최아연", "진향순", "박현지", "이동건", "이민아", "조도연", "김경민", "오용진" };
+        String[] performanceTypes = { "콘서트", "연극", "뮤지컬", "클래식" };
+        String[] performanceTitles = { "나캠든팬미팅", "차학연팬미팅", "태연콘서트", "백현콘서트", "터래기", "비보쇼", "노을콘서트", "쏜애플콘서트",
+                "이찬원콘서트", "워터밤", "할란카운티", "신의 손가락", "시카고", "어린왕자", "드림하이", "보이A", "맘마미아!", "꼬마버스타요", "핑크퐁",
+                "빨래", "무좀", "시추", "한뼘사이", "겟팅아웃", "행오버", "언플러그드", "빌미", "애관!", "수상한 흥신소", "옥탑방 고양이", "돈 조바니",
+                "백조의 호수", "레미제라블", "돈키호테", "차이콥스키", "조성진 피아노", "피아졸라", "일 트로바토레", "호두까기인형", "베토벤" };
+        String[] seatAreas = { "F1", "F2", "F3", "2-A", "2-B", "2-C", "3-D", "3-E", "3-F" };
+        String[] deliveryMethods = { "현장수령", "택배수령" };
+
+        Random random = new Random();
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");   // JDBC 드라이버 로드
+            Connection connection = DriverManager.getConnection(url, username, password); // 데이터베이스 연결
+            Scanner sc = new Scanner(System.in);
+            while (true) {
+                System.out.println("1. Create Table");
+                System.out.println("2. Insert Records");
+                System.out.println("3. Create Bitmap index");
+                System.out.println("0. Exit");
+                System.out.println("Choose work>>" );
+
+                int choice = sc.nextInt();
+
+                if (choice == 1) { // 테이블 생성
+                    createTable(connection);
+                } else if (choice == 2) { // 레코드 삽입
+                    System.out.println("Enter the record number>> ");
+                    int recordCount = sc.nextInt();
+                    insertRecords(connection, names, performanceTypes, performanceTitles, seatAreas, deliveryMethods, random, recordCount); // 레코드 삽입
+                } else if (choice == 3){ // 비트맵 인덱스 생성 및 텍스트 파일 저장
+                    area.createAndSaveBitmapIndexes();
+                    deli.createAndSaveBitmapIndexes();
+                    type.createAndSaveBitmapIndexes();
+                } else if (choice == 0) {
+                    break;
+                } else {
+                    System.out.println("Wrong input.");
+                }
+            }
+            sc.close();
+            connection.close();
+            System.out.println("Exit program");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    // 테이블 생성 메소드
+    private static void createTable(Connection connection) throws SQLException {
+        String createTableQuery = "CREATE TABLE tickets (" +
+                "id INT PRIMARY KEY AUTO_INCREMENT," +
+                "name VARCHAR(100)," +
+                "resident_number VARCHAR(6)," +
+                "performance_type VARCHAR(50)," +
+                "performance_title VARCHAR(100)," +
+                "date DATE," +
+                "seat_area VARCHAR(10)," +
+                "seat_number VARCHAR(2)," +
+                "delivery_method VARCHAR(20)" +
+                ")";
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(createTableQuery);
+        System.out.println("Success to create table");
+    }
+    // 레코드 삽입 메소드
+    private static void insertRecords(Connection connection, String[] names, String[] performanceTypes, String[] performanceTitles,
+                                      String[] seatAreas, String[] deliveryMethods, Random random, int recordCount) throws SQLException {
+        String insertQuery = "INSERT INTO tickets (name, resident_number, performance_type, performance_title, date, seat_area, " +
+                "seat_number, delivery_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        PreparedStatement preparedStatement = connection.prepareStatement(insertQuery);
+
+        LocalDate startDate = LocalDate.of(2023, 1, 1);
+        LocalDate endDate = LocalDate.of(2023, 12, 31);
+
+        // 레코드를 반복적으로 삽입
+        for (int i = 0; i < recordCount; i++) {
+            // 랜덤한 데이터 생성
+            String name = names[random.nextInt(names.length)];
+            String residentNumber = String.valueOf(random.nextInt(900000) + 100000);
+            String performanceType = performanceTypes[random.nextInt(performanceTypes.length)];
+            String performanceTitle = performanceTitles[random.nextInt(performanceTitles.length)];
+            String date = generateRandomDate(startDate, endDate);
+            String seatArea = seatAreas[random.nextInt(seatAreas.length)];
+            String seatNumber = String.valueOf(random.nextInt(99) + 1);
+            String deliveryMethod = deliveryMethods[random.nextInt(deliveryMethods.length)];
+
+            preparedStatement.setString(1, name);
+            preparedStatement.setString(2, residentNumber);
+            preparedStatement.setString(3, performanceType);
+            preparedStatement.setString(4, performanceTitle);
+            preparedStatement.setString(5, date);
+            preparedStatement.setString(6, seatArea);
+            preparedStatement.setString(7, seatNumber);
+            preparedStatement.setString(8, deliveryMethod);
+
+            preparedStatement.executeUpdate();
+        }
+
+        preparedStatement.close();
+
+        System.out.println("Success to insert records");
+    }
+
+    private static String generateRandomDate(LocalDate startDate, LocalDate endDate) {
+        long startEpochDay = startDate.toEpochDay();
+        long endEpochDay = endDate.toEpochDay();
+        long randomEpochDay = ThreadLocalRandom.current().nextLong(startEpochDay, endEpochDay);
+
+        return LocalDate.ofEpochDay(randomEpochDay).toString();
+    }
+}

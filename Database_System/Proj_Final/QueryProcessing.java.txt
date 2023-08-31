@@ -1,0 +1,149 @@
+import java.io.*;
+import java.sql.*;
+import java.util.*;
+
+public class QueryProcessing {
+    private static final String URL = "jdbc:mysql://localhost:3306/personality";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "20206319";
+
+    public static void main(String[] args) {
+        System.setProperty("file.encoding", "UTF-8");
+        BitSet[] typeBitmaps = loadBitmapIndexes("performance_type_bitmap_", 4);
+        BitSet[] deliveryBitmaps = loadBitmapIndexes("delivery_type_bitmap_", 2);
+        BitSet[] areaBitmaps = loadBitmapIndexes("seat_area_bitmap_", 9);
+
+        Scanner sc = new Scanner(System.in, "UTF-8");
+        System.out.println("Which one do you want to see? 1. Performance type - Delivery method    2. Performance type - Seat Area");
+        int num = sc.nextInt();
+
+        String performanceType = "";
+        String deliveryMethod = "";
+        String seatArea = "";
+
+        if (num == 1) {
+            System.out.print("Enter performance type (Concert, Play, Musical, Classic): ");
+            performanceType = sc.next();
+            System.out.print("Enter delivery method (Pick up, Post): ");
+            deliveryMethod = sc.next();
+        } else if (num == 2) {
+            System.out.print("Enter performance type (Concert, Play, Musical, Classic): ");
+            performanceType = sc.next();
+            System.out.print("Enter seat area (F1, F2, F3, 2-A, 2-B, 2-C, 3-D, 3-E, 3-F): ");
+            seatArea = sc.next();
+            int areaIndex = getSeatAreaIndex(seatArea);
+            if (areaIndex == -1) {
+                System.out.println("Invalid seat area.");
+                return;
+            }
+            if (areaBitmaps[areaIndex] == null) {
+                System.out.println("Invalid seat area.");
+                return;
+            }
+        } else {
+            System.out.println("Wrong input.");
+            return;
+        }
+
+        int typeIndex = getTypeIndex(performanceType);
+
+        if (typeBitmaps[typeIndex] != null) {
+            BitSet result = (BitSet) typeBitmaps[typeIndex].clone();
+            if (num == 1) {
+                int deliveryIndex = getDeliveryIndex(deliveryMethod);
+                if (deliveryIndex == -1) {
+                    System.out.println("Invalid delivery method.");
+                    return;
+                }
+                if (deliveryBitmaps[deliveryIndex] == null) {
+                    System.out.println("Invalid delivery method.");
+                    return;
+                }
+                result.and(deliveryBitmaps[deliveryIndex]);
+            } else if (num == 2) {
+                int areaIndex = getSeatAreaIndex(seatArea);
+                result.and(areaBitmaps[areaIndex]);
+            }
+            int count = result.cardinality();
+            System.out.println("Count: " + count);
+        } else {
+            System.out.println("Invalid performance type, delivery method, or seat area.");
+        }
+    }
+    public static BitSet[] loadBitmapIndexes(String filenamePrefix, int bitmapCount) {
+        BitSet[] bitmaps = new BitSet[bitmapCount];
+
+        try {
+            for (int i = 0; i < bitmapCount; i++) {
+                String filename = filenamePrefix + (i + 1) + ".txt";
+                BufferedReader reader = new BufferedReader(new FileReader(filename));
+
+                String line = reader.readLine();
+                BitSet bitmap = new BitSet(line.length());
+                for (int j = 0; j < line.length(); j++) {
+                    int bit = Integer.parseInt(String.valueOf(line.charAt(j)));
+                    if (bit == 1) {
+                        bitmap.set(j);
+                    }
+                }
+                bitmaps[i] = bitmap;
+                reader.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bitmaps;
+    }
+
+    public static int getTypeIndex(String type) {
+        switch (type) {
+            case "콘서트":
+                return 0;
+            case "연극":
+                return 1;
+            case "뮤지컬":
+                return 2;
+            case "클래식":
+                return 3;
+            default:
+                throw new IllegalArgumentException("Invalid type: " + type);
+        }
+    }
+
+    public static int getDeliveryIndex(String delivery) {
+        switch (delivery) {
+            case "현장수령":
+                return 0;
+            case "택배수령":
+                return 1;
+            default:
+                throw new IllegalArgumentException("Invalid delivery: " + delivery);
+        }
+    }
+
+    public static int getSeatAreaIndex(String seatArea) {
+        switch (seatArea) {
+            case "F1":
+                return 0;
+            case "F2":
+                return 1;
+            case "F3":
+                return 2;
+            case "2-A":
+                return 3;
+            case "2-B":
+                return 4;
+            case "2-C":
+                return 5;
+            case "3-D":
+                return 6;
+            case "3-E":
+                return 7;
+            case "3-F":
+                return 8;
+            default:
+                throw new IllegalArgumentException("Invalid area:" + seatArea);
+        }
+    }
+
+}

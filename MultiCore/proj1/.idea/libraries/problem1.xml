@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="problem1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/problem1/static_cyclic.jar!/" />
+      <root url="jar://$PROJECT_DIR$/problem1/static_block.jar!/" />
+      <root url="jar://$PROJECT_DIR$/problem1/dynamic.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

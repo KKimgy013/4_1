@@ -1,0 +1,87 @@
+import java.sql.*;
+import java.util.*;
+import java.io.*;
+
+public class delivery_bitmap {
+    private static final String URL = "jdbc:mysql://localhost:3306/personality";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "20206319";
+
+    public static void main(String[] args) {
+        createAndSaveBitmapIndexes();
+    }
+
+    public static void createAndSaveBitmapIndexes() {
+        int rcount = getRCount();
+        BitSet[] bitmaps = createBitmapIndexes(rcount);
+        saveBitmapIndexes(bitmaps);
+    }
+
+    public static int getRCount() {
+        int rcount = 0;
+
+        try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) AS count FROM tickets")) {
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                rcount = resultSet.getInt("count");
+                System.out.println("Record count: " + rcount);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rcount;
+    }
+
+    public static BitSet[] createBitmapIndexes(int rcount) {
+        BitSet[] bm = new BitSet[2];
+
+        try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement("SELECT delivery_method FROM tickets")) {
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                String delivery = resultSet.getString("delivery_method");
+
+                int index = getDeliveryIndex(delivery);
+
+                if (bm[index] == null) {
+                    bm[index] = new BitSet(rcount);
+                }
+                bm[index].set(resultSet.getRow() - 1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return bm;
+    }
+
+    public static int getDeliveryIndex(String delivery) {
+        switch (delivery) {
+            case "현장수령":
+                return 0;
+            case "택배수령":
+                return 1;
+            default:
+                throw new IllegalArgumentException("Invalid delivery: " + delivery);
+        }
+    }
+
+    public static void saveBitmapIndexes(BitSet[] bitmaps) {
+        for (int i = 0; i < bitmaps.length; i++) {
+            BitSet bm = bitmaps[i];
+            String filename = "delivery_type_bitmap_" +(i + 1) +".txt";
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+                for (int j = 0; j < bm.size(); j++) {
+                    int bit = bm.get(j) ? 1 : 0;
+                    writer.write(String.valueOf(bit));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Success to save files.");
+    }
+}
